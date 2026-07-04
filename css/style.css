@@ -1,0 +1,323 @@
+﻿/* ============ 全局变量与主题 ============ */
+:root {
+  --canon: #D52024;
+  --nikon: #FFCD00;
+  --fuji: #4CAF50;
+  --panasonic: #0066B4;
+  --sony: #1A1A1A;
+  --bg: #F7F7F8;
+  --card: #FFFFFF;
+  --text: #1A1A2E;
+  --text-secondary: #6B7280;
+  --border: #E5E7EB;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ============ 布局 ============ */
+.app-header {
+  background: white; border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.app-header h1 {
+  font-size: 18px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.app-header .nav { display: flex; gap: 4px; }
+.app-header .nav a {
+  padding: 6px 14px; border-radius: 6px;
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  transition: all 0.2s; cursor: pointer;
+}
+.app-header .nav a:hover, .app-header .nav a.active {
+  background: var(--bg); color: var(--text);
+}
+.app-main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 40px; }
+
+/* ============ 品牌颜色 ============ */
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.brand-canon { color: var(--canon); }
+.brand-bg-canon { background: var(--canon); }
+.brand-nikon { color: #B8960F; }
+.brand-bg-nikon { background: var(--nikon); }
+.brand-fujifilm { color: var(--fuji); }
+.brand-bg-fujifilm { background: var(--fuji); }
+.brand-panasonic { color: var(--panasonic); }
+.brand-bg-panasonic { background: var(--panasonic); }
+.brand-sony { color: var(--sony); }
+.brand-bg-sony { background: var(--sony); }
+
+/* ============ 首页品牌入口 ============ */
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 40px;
+}
+.brand-card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 28px 20px; cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: center; border-bottom: 3px solid transparent;
+}
+.brand-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+.brand-card .brand-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px; font-size: 24px; font-weight: 800; color: white;
+}
+.brand-card h3 { font-size: 18px; margin-bottom: 4px; }
+.brand-card .count { font-size: 13px; color: var(--text-secondary); }
+
+/* ============ 推荐组合 ============ */
+.section-title {
+  font-size: 20px; font-weight: 700; margin-bottom: 16px;
+}
+.combo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px; margin-bottom: 40px;
+}
+.combo-card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 20px; box-shadow: var(--shadow);
+  transition: box-shadow 0.2s; cursor: pointer;
+}
+.combo-card:hover { box-shadow: var(--shadow-hover); }
+.combo-card .combo-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.combo-card .combo-header .brand-name {
+  font-size: 13px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; color: white;
+}
+.combo-card .combo-header .score {
+  font-size: 22px; font-weight: 800; line-height: 1;
+}
+.combo-card .combo-items { display: flex; flex-direction: column; gap: 6px; }
+.combo-card .combo-item {
+  font-size: 14px; display: flex; align-items: center; gap: 6px;
+}
+.combo-card .combo-item .role {
+  font-size: 11px; color: var(--text-secondary);
+  background: var(--bg); padding: 1px 6px; border-radius: 4px;
+}
+.combo-card .combo-item .name { font-weight: 500; }
+.combo-card .score-bar {
+  margin-top: 12px; height: 4px; border-radius: 2px; background: var(--border);
+  overflow: hidden;
+}
+.combo-card .score-bar .fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  transition: width 0.6s;
+}
+
+/* ============ 列表页 ============ */
+.filter-bar {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-bar .filter-btn {
+  padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: white; font-size: 13px; cursor: pointer;
+  transition: all 0.2s; color: var(--text-secondary);
+}
+.filter-bar .filter-btn:hover { border-color: var(--text); color: var(--text); }
+.filter-bar .filter-btn.active {
+  background: var(--text); color: white; border-color: var(--text);
+}
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.device-card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 20px; box-shadow: var(--shadow);
+  cursor: pointer; transition: box-shadow 0.2s, transform 0.2s;
+}
+.device-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+.device-card .card-top {
+  display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;
+}
+.device-card .card-top .brand-tag {
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; color: white;
+}
+.device-card .card-top .type-tag {
+  font-size: 11px; color: var(--text-secondary); background: var(--bg);
+  padding: 2px 8px; border-radius: 4px;
+}
+.device-card h3 { font-size: 16px; margin-bottom: 4px; }
+.device-card .sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+.device-card .specs {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 12px; color: var(--text-secondary);
+}
+.device-card .specs span { white-space: nowrap; }
+.device-card .price {
+  margin-top: 10px; font-size: 14px; font-weight: 600;
+}
+
+/* ============ 详情页 ============ */
+.detail-header {
+  background: var(--card); border-radius: var(--radius);
+  padding: 28px; margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.detail-header .title-row {
+  display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;
+}
+.detail-header h2 { font-size: 24px; font-weight: 700; }
+.detail-header .brand-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; padding: 4px 12px;
+  border-radius: 6px; color: white;
+}
+.detail-header .desc { margin-top: 8px; color: var(--text-secondary); }
+.specs-table {
+  background: var(--card); border-radius: var(--radius);
+  padding: 0; box-shadow: var(--shadow); overflow: hidden;
+  margin-bottom: 16px;
+}
+.specs-table table { width: 100%; border-collapse: collapse; }
+.specs-table th { text-align: left; }
+.specs-table tr { border-bottom: 1px solid var(--border); }
+.specs-table tr:last-child { border-bottom: none; }
+.specs-table td {
+  padding: 12px 20px; font-size: 14px; vertical-align: top;
+}
+.specs-table td:first-child {
+  width: 140px; font-weight: 500; color: var(--text-secondary);
+  background: #FAFAFA;
+}
+
+.compat-section { margin-top: 24px; }
+.compat-section h3 {
+  font-size: 18px; font-weight: 700; margin-bottom: 14px;
+}
+
+/* ============ 组合评分页 ============ */
+.combo-selector {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px; align-items: start; margin-bottom: 24px;
+}
+.combo-selector select {
+  width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); font-size: 14px;
+  background: white; appearance: auto;
+}
+.combo-selector .vs {
+  font-size: 20px; font-weight: 800; color: var(--text-secondary);
+  padding-top: 40px; text-align: center;
+}
+
+.score-card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 28px; box-shadow: var(--shadow); margin-bottom: 20px;
+}
+.score-big {
+  text-align: center; padding: 20px 0;
+}
+.score-big .number {
+  font-size: 64px; font-weight: 800; line-height: 1;
+}
+.score-big .label { font-size: 16px; color: var(--text-secondary); margin-top: 6px; }
+
+.score-breakdown { display: flex; flex-direction: column; gap: 12px; }
+.score-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.score-row .label { width: 100px; font-size: 14px; font-weight: 500; }
+.score-row .bar-track {
+  flex: 1; height: 8px; border-radius: 4px; background: var(--border);
+  overflow: hidden;
+}
+.score-row .bar-fill {
+  height: 100%; border-radius: 4px; transition: width 0.8s ease;
+}
+.score-row .value { width: 32px; text-align: right; font-weight: 700; font-size: 14px; }
+
+/* ============ 搜索页 ============ */
+.search-box {
+  position: relative; margin-bottom: 20px;
+}
+.search-box input {
+  width: 100%; padding: 12px 16px 12px 44px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 16px; background: white;
+}
+.search-box .icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 18px; color: var(--text-secondary);
+}
+.search-result-group { margin-bottom: 20px; }
+.search-result-group h3 {
+  font-size: 15px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 10px; padding-left: 4px;
+}
+
+/* ============ 标签Tabs ============ */
+.tabs {
+  display: flex; gap: 0; margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.tabs .tab {
+  padding: 10px 20px; font-size: 14px; font-weight: 500;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  color: var(--text-secondary); transition: all 0.2s;
+}
+.tabs .tab:hover { color: var(--text); }
+.tabs .tab.active {
+  color: var(--text); border-bottom-color: var(--text);
+}
+
+/* ============ 通用工具 ============ */
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 16px; font-size: 14px; color: var(--text-secondary);
+  cursor: pointer; transition: color 0.2s;
+}
+.back-link:hover { color: var(--text); }
+.text-center { text-align: center; }
+.mt-20 { margin-top: 20px; }
+.mb-20 { margin-bottom: 20px; }
+.gap-8 { gap: 8px; }
+
+/* ============ 错误提示 ============ */
+.error-box {
+  background: #FFF5F5; border: 1px solid #FECACA;
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  color: #DC2626; font-size: 14px;
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 768px) {
+  .brand-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .combo-grid { grid-template-columns: 1fr; }
+  .device-grid { grid-template-columns: 1fr; }
+  .combo-selector { grid-template-columns: 1fr; }
+  .combo-selector .vs { padding-top: 0; }
+  .app-header .nav a { padding: 4px 10px; font-size: 13px; }
+  .score-big .number { font-size: 48px; }
+}
+@media (max-width: 480px) {
+  .brand-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .brand-card { padding: 20px 14px; }
+}
