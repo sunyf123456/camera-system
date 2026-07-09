@@ -2,671 +2,560 @@
 // 影视设备打分 - 主应用
 // ============================================================
 
-// ---------- 页面路由 ----------
+// ---- 初始化标签 ----
+for (const b of bodies) {
+  const t = assignBodyTags(b);
+  if (!b.featureTags?.length) b.featureTags = t.featureTags;
+  if (!b.sceneTags?.length) b.sceneTags = t.sceneTags;
+}
+for (const l of lenses) {
+  const t = assignLensTags(l);
+  if (!l.featureTags?.length) l.featureTags = t.featureTags;
+  if (!l.sceneTags?.length) l.sceneTags = t.sceneTags;
+}
+
+// ---- 路由 ----
 const page = {
-  current: "home",
-  params: {},
-
-  init() {
-    window.addEventListener("hashchange", () => this.navigate());
-    this.navigate();
-  },
-
+  current: "home", params: {},
+  init() { window.addEventListener("hashchange",()=>this.navigate()); this.navigate(); },
   navigate(hash) {
-    if (hash !== undefined) {
-      window.location.hash = hash;
-      return;
-    }
+    if (hash !== undefined) { window.location.hash = hash; return; }
     const raw = window.location.hash.slice(1) || "home";
-    const parts = raw.split("?");
-    const path = parts[0];
-    const searchParams = new URLSearchParams(parts[1] || "");
+    const [path, qs] = raw.split("?");
     this.params = {};
-    for (const [k, v] of searchParams) this.params[k] = v;
-    this.current = path;
-    this.render();
+    if (qs) for (const p of qs.split("&")) { const [k,v]=p.split("="); if(k) this.params[decodeURIComponent(k)]=decodeURIComponent(v||""); }
+    this.current = path; this.render();
   },
-
-  go(path, extraParams = {}) {
+  go(path, extras = {}) {
     const p = new URLSearchParams();
-    for (const [k, v] of Object.entries(extraParams)) p.set(k, v);
+    for (const [k,v] of Object.entries(extras)) if (v !== undefined && v !== null && v !== "") p.set(k, v);
     const qs = p.toString();
     this.navigate(path + (qs ? "?" + qs : ""));
   }
 };
+// ---- 辅助 ----
+function $(s) { return document.querySelector(s); }
+function $$(s) { return document.querySelectorAll(s); }
 
-// ---------- 辅助函数 ----------
-function $(sel) { return document.querySelector(sel); }
-function $$(sel) { return document.querySelectorAll(sel); }
-
-const brands = {
-  canon: { name: "佳能", cn: "Canon", color: "#D52024" },
-  nikon: { name: "尼康", cn: "Nikon", color: "#B8960F" },
-  fujifilm: { name: "富士", cn: "Fujifilm", color: "#4CAF50" },
-  panasonic: { name: "松下", cn: "Panasonic", color: "#0066B4" },
-  sony: { name: "索尼", cn: "Sony", color: "#1A1A1A" }
+const sceneLabels = {
+  portrait:"人像摄影", landscape:"风光/旅行", wedding:"婚礼/活动", documentary:"纪录片",
+  cinema:"电影/短片", vlog:"Vlog/自媒体", sports:"体育/运动", commercial:"商业产品",
+  wildlife:"野生动物", street:"街拍/人文"
+};
+const sceneIcons = {
+  portrait:"👤", landscape:"🏔️", wedding:"💒", documentary:"🎬",
+  cinema:"🎥", vlog:"🎙️", sports:"⚽", commercial:"📦", wildlife:"🦅", street:"🏙️"
+};
+const featureLabels = {
+  "high-mp":"高像素","mid-mp":"中像素","low-mp":"低像素","high-fps":"高速连拍","mid-fps":"中速连拍",
+  "8k-video":"8K视频","6k-video":"6K视频","4k120-video":"4K高帧率","raw-video":"RAW视频",
+  "lightweight":"轻便","heavy":"沉重","pro-body":"专业旗舰","pro-ibis":"防抖出色",
+  "stacked-sensor":"堆栈式传感器","high-iso":"高感光","retro":"复古外观",
+  "large-aperture":"大光圈","mid-aperture":"中光圈","constant-aperture":"恒定光圈","pro-lens":"专业镜头",
+  "wide-angle":"广角","telephoto":"长焦","standard":"标准焦段","macro":"微距",
+  "is-lens":"防抖镜头","portrait-focal":"人像焦段","travel-zoom":"旅行变焦","filter-82":"82mm口径"
 };
 
+function esc(s) { const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+function priceText(p, useUsed=false) {
+  if (!p) return "价格待询";
+  const pr = useUsed ? (p.usedPrice||p.launchPrice) : (p.launchPrice||p.usedPrice);
+  if (!pr) return "价格待询";
+  return `¥${formatNum(pr.low)}-${formatNum(pr.high)}`;
+}
+function formatNum(n) { return n>=10000 ? (n/10000).toFixed(n%10000?1:0)+"万" : (n|0).toString(); }
+function brandTag(b) { return `<span class="bt brand-bg-${b}">${brands[b]?.name||b}</span>`; }
+function brandBadge(b) { return `<span class="badge brand-bg-${b}">${brands[b]?.name||b}</span>`; }
 function brandIcon(b) {
-  const info = brands[b];
+  const info=brands[b]; if(!info) return "";
   return `<span class="brand-icon brand-bg-${b}">${info.cn[0]}</span>`;
 }
+function scoreColor(s) { return s>=85?"#22C55E":s>=70?"#8BC34A":s>=55?"#FF9800":"#EF4444"; }
+function scoreText(s) { return s>=85?"优秀":s>=70?"良好":s>=55?"一般":"不推荐"; }
 
-function brandTag(b) {
-  const info = brands[b];
-  return `<span class="brand-tag brand-bg-${b}">${info.name}</span>`;
+function tagChips(tags, type) {
+  if (!tags?.length) return "";
+  return `<div class="tag-chips">` + tags.map(t => {
+    const label = type==="scene" ? (sceneLabels[t]||t) : (featureLabels[t]||t);
+    return `<span class="tag-chip ${type}">${label}</span>`;
+  }).join("") + `</div>`;
 }
 
-function brandDot(b) {
-  return `<span class="brand-dot brand-bg-${b}"></span>`;
+function specRows(fields) {
+  return fields.map(([l,v])=>`<tr><td>${l}</td><td>${v||"-"}</td></tr>`).join("");
 }
+// ---- 推荐状态 ----
+let recState = {
+  step: 1, budgetLow: 5000, budgetHigh: 30000, photoPct: 50,
+  sceneTypes: [], sensorPrefer: "", brandPrefer: [], useUsed: false,
+  existingBodyId: "", existingLensId: "", results: []
+};
 
-function priceText(p) {
-  const [low, high] = p.split("-");
-  return `¥${low}-${high}`;
-}
-
-function esc(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-// ---------- 评分颜色 ----------
-function scoreColor(s) {
-  if (s >= 85) return "#22C55E";
-  if (s >= 70) return "#8BC34A";
-  if (s >= 55) return "#FF9800";
-  return "#EF4444";
-}
-
-function scoreText(s) {
-  if (s >= 85) return "优秀";
-  if (s >= 70) return "良好";
-  if (s >= 55) return "一般";
-  return "不推荐";
-}
-
-// ---------- 页面渲染器 ----------
+// ---- 页面渲染 ----
 const render = {
-  // ----- 首页 -----
   home() {
-    const brandCards = Object.entries(brands).map(([key, val]) => `
-      <div class="brand-card" onclick="page.go('bodyList',{brand:'${key}'})" style="border-bottom-color:${val.color}">
-        ${brandIcon(key)}
-        <h3>${val.name}</h3>
-        <div class="count">${bodies.filter(b=>b.brand===key).length} 款机身 · ${lenses.filter(l=>l.brand===key).length} 款镜头</div>
-      </div>
-    `).join("");
+    const brandCards = Object.entries(brands).map(([k,v]) => {
+      const bc = bodies.filter(b=>b.brand===k).length;
+      const lc = lenses.filter(l=>l.brand===k).length;
+      return `<div class="brand-card" onclick="page.go('bodyList',{brand:'${k}'})" style="border-bottom-color:${v.color}">
+        ${brandIcon(k)}<h3>${v.name}</h3><div class="count">${bc} 款机身 · ${lc} 款镜头</div></div>`;
+    }).join("");
 
-    // 推荐组合：取几组高分组合
-    let featuredCombos = [];
+    let combos = [];
     for (const body of bodies) {
-      const compatLenses = lenses.filter(l => l.brand === body.brand && l.mount === body.mount);
-      for (const lens of compatLenses.slice(0, 3)) {
-        const score = getComboScore(body.id, lens.id);
-        if (score && !score.error) featuredCombos.push({ body, lens, score });
+      const cl = lenses.filter(l=>l.brand===body.brand&&l.mount===body.mount).slice(0,2);
+      for (const lens of cl) {
+        const sc = calculateScore(body, lens);
+        if (sc) combos.push({body,lens,score:sc});
       }
     }
-    featuredCombos.sort((a, b) => b.score.overall - a.score.overall);
-    featuredCombos = featuredCombos.slice(0, 6);
+    combos.sort((a,b)=>b.score.overall-a.score.overall);
+    const top = combos.slice(0,6);
 
-    const comboCards = featuredCombos.map(({body, lens, score}) => `
+    const cc = top.map(({body,lens,score}) => `
       <div class="combo-card" onclick="page.go('combo',{body:'${body.id}',lens:'${lens.id}'})">
-        <div class="combo-header">
-          <span class="brand-name brand-bg-${body.brand}">${brands[body.brand].name}</span>
-          <span class="score" style="color:${scoreColor(score.overall)}">${score.overall}</span>
-        </div>
-        <div class="combo-items">
-          <div class="combo-item"><span class="role">机身</span><span class="name">${esc(body.model)}</span></div>
-          <div class="combo-item"><span class="role">镜头</span><span class="name">${esc(lens.model)}</span></div>
-        </div>
-        <div class="score-bar"><div class="fill" style="width:${score.overall}%"></div></div>
+        <div class="hdr"><span class="bn brand-bg-${body.brand}">${brands[body.brand].name}</span>
+        <span class="sc" style="color:${scoreColor(score.overall)}">${score.overall}</span></div>
+        <div class="combo-item"><span class="role">机身</span><span class="nm">${esc(body.model)}</span></div>
+        <div class="combo-item"><span class="role">镜头</span><span class="nm">${esc(lens.model)}</span></div>
+        <div class="score-track"><div class="fill" style="width:${score.overall}%"></div></div>
       </div>
     `).join("");
 
-    return `
-      <h2 class="section-title">选择品牌</h2>
-      <div class="brand-grid">${brandCards}</div>
-      <h2 class="section-title">推荐组合</h2>
-      <div class="combo-grid">${comboCards || '<p style="color:#999">暂无推荐组合</p>'}</div>
-    `;
+    return `<div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:32px;font-weight:800;margin-bottom:8px">影视设备打分</div>
+      <div style="color:var(--text-secondary);margin-bottom:16px">机身 · 镜头 · 组合评分 · 智能推荐</div>
+      <button class="btn btn-primary" onclick="page.go('recommend',{})" style="padding:14px 40px;font-size:16px">🎯 开始推荐</button>
+    </div>
+    <h2 class="section-title">选择品牌</h2><div class="brand-grid">${brandCards}</div>
+    <h2 class="section-title">🔥 热门评分组合</h2><div class="combo-grid">${cc||'<p style="color:#999">暂无数据</p>'}</div>`;
   },
 
-  // ----- 机身列表 -----
   bodyList() {
-    const brand = page.params.brand || "";
-    let list = bodies;
-    if (brand) list = list.filter(b => b.brand === brand);
+    const brand = page.params.brand||"";
+    let list = brand ? bodies.filter(b=>b.brand===brand) : [...bodies];
+    const sensor = page.params.sensor||"";
+    if (sensor) list = list.filter(b=>b.sensor===sensor);
+    const sort = page.params.sort||"";
+    if (sort==="price-asc") list.sort((a,b)=>(a.launchPrice?.low||0)-(b.launchPrice?.low||0));
+    else if (sort==="price-desc") list.sort((a,b)=>(b.launchPrice?.low||0)-(a.launchPrice?.low||0));
+    else if (sort==="mp-desc") list.sort((a,b)=>b.megapixels-a.megapixels);
+    else if (sort==="year-desc") list.sort((a,b)=>b.releaseYear-a.releaseYear);
 
-    // 传感器筛选
-    const sensorFilter = page.params.sensor || "";
-    if (sensorFilter) list = list.filter(b => b.sensor === sensorFilter);
+    const fb = (l,act,oc) => `<span class="filter-btn ${act?'active':''}" onclick="${esc(oc)}">${l}</span>`;
+    let fhtml = `<div class="filter-bar">${fb("全部",!brand,"page.go('bodyList',{})")}`;
+    for (const [k,v] of Object.entries(brands)) fhtml += fb(v.name,brand===k,`page.go('bodyList',{brand:'${k}'})`);
+    fhtml += `</div>`;
 
-    // 排序
-    const sort = page.params.sort || "";
-    if (sort === "price-asc") list.sort((a,b) => a.priceRange.localeCompare(b.priceRange));
-    else if (sort === "price-desc") list.sort((a,b) => b.priceRange.localeCompare(a.priceRange));
-    else if (sort === "mp-desc") list.sort((a,b) => b.megapixels - a.megapixels);
-    else if (sort === "year-desc") list.sort((a,b) => b.releaseYear - a.releaseYear);
-
-    const filterBtns = (key, options) => {
-      const cur = page.params[key] || "";
-      const items = [{v:"",l:"全部"}].concat(options).map(o => `
-        <span class="filter-btn ${cur===o.v?'active':''}" onclick="page.go('bodyList',{...page.params,'${key}':'${o.v}'})">${o.l}</span>
-      `).join("");
-      // 为了简单，这里用 onclick 但保留之前选中的参数
-      // 用更优雅的方式
-      return `<div class="filter-bar">${items}</div>`;
-    };
-
-    // 用更直接的方式写筛选
-    let filterHTML = `<div class="filter-bar">`;
-    const sensors = ["全画幅", "APS-C", "中画幅", "MFT"];
-    const allS = brand ? sensors : [""];
-    // 品牌筛选
-    filterHTML += `<span class="filter-btn ${!brand?'active':''}" onclick="page.go('bodyList',{})">全部品牌</span>`;
-    for (const [k, v] of Object.entries(brands)) {
-      filterHTML += `<span class="filter-btn ${brand===k?'active':''}" onclick="page.go('bodyList',{brand:'${k}'})">${v.name}</span>`;
-    }
-    filterHTML += `</div>`;
-
-    // 传感器筛选 (仅当选择了品牌)
-    let sensorHTML = "";
-    if (brand) {
-      sensorHTML = `<div class="filter-bar">`;
-      sensorHTML += `<span class="filter-btn ${!sensorFilter?'active':''}" onclick="page.go('bodyList',{brand:'${brand}'})">全部画幅</span>`;
-      const available = [...new Set(bodies.filter(b=>b.brand===brand).map(b=>b.sensor))];
-      for (const s of available) {
-        sensorHTML += `<span class="filter-btn ${sensorFilter===s?'active':''}" onclick="page.go('bodyList',{brand:'${brand}',sensor:'${s}'})">${s}</span>`;
-      }
-      sensorHTML += `</div>`;
+    let sensors = brand ? [...new Set(bodies.filter(b=>b.brand===brand).map(b=>b.sensor))] : [];
+    let sh = "";
+    if (sensors.length) {
+      sh = `<div class="filter-bar">${fb("全部画幅",!sensor,`page.go('bodyList',{brand:'${brand}'})`)}`;
+      for (const s of sensors) sh += fb(s,sensor===s,`page.go('bodyList',{brand:'${brand}',sensor:'${s}'})`);
+      sh += `</div>`;
     }
 
-    // 排序按钮
-    const sortHTML = `
-      <div class="filter-bar">
-        <span class="filter-btn ${sort===''?'active':''}" onclick="page.go('bodyList',{brand:'${brand}',sensor:'${sensorFilter}'})">默认</span>
-        <span class="filter-btn ${sort==='price-asc'?'active':''}" onclick="page.go('bodyList',{brand:'${brand}',sensor:'${sensorFilter}',sort:'price-asc'})">价格↑</span>
-        <span class="filter-btn ${sort==='price-desc'?'active':''}" onclick="page.go('bodyList',{brand:'${brand}',sensor:'${sensorFilter}',sort:'price-desc'})">价格↓</span>
-        <span class="filter-btn ${sort==='mp-desc'?'active':''}" onclick="page.go('bodyList',{brand:'${brand}',sensor:'${sensorFilter}',sort:'mp-desc'})">像素↓</span>
-        <span class="filter-btn ${sort==='year-desc'?'active':''}" onclick="page.go('bodyList',{brand:'${brand}',sensor:'${sensorFilter}',sort:'year-desc'})">年份↓</span>
-      </div>
-    `;
+    const sh2 = `<div class="filter-bar">
+      ${fb("默认",!sort,`page.go('bodyList',{brand:'${brand}',sensor:'${sensor}'})`)}
+      ${fb("价格↑",sort==="price-asc",`page.go('bodyList',{brand:'${brand}',sensor:'${sensor}',sort:'price-asc'})`)}
+      ${fb("价格↓",sort==="price-desc",`page.go('bodyList',{brand:'${brand}',sensor:'${sensor}',sort:'price-desc'})`)}
+      ${fb("像素↓",sort==="mp-desc",`page.go('bodyList',{brand:'${brand}',sensor:'${sensor}',sort:'mp-desc'})`)}
+      ${fb("年份↓",sort==="year-desc",`page.go('bodyList',{brand:'${brand}',sensor:'${sensor}',sort:'year-desc'})`)}
+    </div>`;
 
     const cards = list.map(b => `
       <div class="device-card" onclick="page.go('bodyDetail',{id:'${b.id}'})">
-        <div class="card-top">
-          ${brandTag(b.brand)}
-          <span class="type-tag">${b.sensor}</span>
-        </div>
-        <h3>${esc(b.model)}</h3>
-        <div class="sub">${esc(b.description)}</div>
-        <div class="specs">
-          <span>📷 ${b.megapixels}MP</span>
-          <span>🎬 ${b.video}</span>
-          <span>📅 ${b.releaseYear}</span>
-        </div>
-        <div class="price">${priceText(b.priceRange)}</div>
+        <div class="top">${brandTag(b.brand)}<span class="tt">${b.sensor}</span></div>
+        <h3>${esc(b.model)}</h3><div class="sub">${b.megapixels}MP · ${(b.video||"").split("/")[0]?.trim()||""}</div>
+        <div class="sp"><span>📅 ${b.releaseYear}</span><span>⚖️ ${b.weight}g</span></div>
+        <div class="pr">${priceText(b)}</div>
+        ${tagChips(b.featureTags?.slice(0,4),"feature")}
       </div>
     `).join("");
 
-    return `
-      <div class="back-link" onclick="page.go('home')">← 返回首页</div>
-      ${filterHTML}
-      ${sensorHTML}
-      ${sortHTML}
-      <div class="device-grid">${cards || '<p style="color:#999;padding:40px;text-align:center">没有找到匹配的机身</p>'}</div>
-    `;
+    return `<div class="back-link" onclick="page.go('home')">← 返回首页</div>${fhtml}${sh}${sh2}
+      <div class="device-grid">${cards||'<p style="padding:40px;text-align:center;color:#999">暂无</p>'}</div>`;
   },
-
-  // ----- 机身详情 -----
   bodyDetail() {
-    const id = page.params.id;
-    const b = bodies.find(x => x.id === id);
-    if (!b) return '<div class="error-box">未找到该机身</div>';
-
-    // 兼容镜头
-    const compatLenses = lenses.filter(l => l.brand === b.brand && l.mount === b.mount);
-    const compatCards = compatLenses.map(l => {
-      const score = getComboScore(b.id, l.id);
-      const sc = score && !score.error ? score.overall : 0;
-      return `
-        <div class="device-card" onclick="page.go('combo',{body:'${b.id}',lens:'${l.id}'})">
-          <div class="card-top">
-            ${brandTag(l.brand)}
-            <span class="type-tag">${l.type}</span>
-          </div>
-          <h3>${esc(l.model)}</h3>
-          <div class="sub">${l.focalRange} ${l.aperture}</div>
-          <div class="specs">
-            <span>⚖️ ${l.weight}g</span>
-            <span>🔘 ${l.filterSize}mm</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-            <span class="price">${priceText(l.priceRange)}</span>
-            <span style="font-weight:700;font-size:18px;color:${scoreColor(sc)}">${sc}</span>
-          </div>
+    const b = bodies.find(x=>x.id===page.params.id);
+    if (!b) return `<div class="back-link" onclick="page.go('home')">← 返回</div><div class="error-box">未找到该机身</div>`;
+    const cl = lenses.filter(l=>l.brand===b.brand&&l.mount===b.mount);
+    const cc = cl.map(l => {
+      const sc = getComboScore(b.id, l.id);
+      const sv = sc&&!sc.error?sc.overall:0;
+      return `<div class="device-card" onclick="page.go('combo',{body:'${b.id}',lens:'${l.id}'})">
+        <div class="top">${brandTag(l.brand)}<span class="tt">${l.type}</span></div>
+        <h3>${esc(l.model)}</h3><div class="sub">${l.focalRange} ${l.aperture}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span style="font-size:14px;font-weight:600">${priceText(l)}</span>
+          <span style="font-weight:700;font-size:18px;color:${scoreColor(sv)}">${sv}</span>
         </div>
-      `;
+      </div>`;
     }).join("");
-
-    const rows = [
-      ["品牌", brandTag(b.brand)],
-      ["型号", b.model],
-      ["卡口", b.mount],
-      ["传感器", b.sensor],
-      ["有效像素", `${b.megapixels} MP`],
-      ["视频规格", b.video],
-      ["RAW 视频", b.videoRaw || "不支持"],
-      ["图像处理器", b.processor],
-      ["防抖", b.ibis ? `${b.ibisLevel} 防抖` : "无机身防抖"],
-      ["快门速度", b.shutter],
-      ["连拍速度", `${b.fps} 张/秒`],
-      ["ISO", b.iso],
-      ["重量", `${b.weight}g`],
-      ["上市年份", b.releaseYear],
-      ["参考价格", priceText(b.priceRange)]
-    ];
-
-    const specRows = rows.map(([label, val]) =>
-      `<tr><td>${label}</td><td>${val}</td></tr>`
-    ).join("");
-
-    return `
-      <div class="back-link" onclick="page.go('bodyList',{brand:'${b.brand}'})">← 返回列表</div>
-      <div class="detail-header">
-        <div class="title-row">
-          <div>
-            <h2>${esc(b.model)}</h2>
-            <div class="desc">${b.description}</div>
-          </div>
-          <div><span class="brand-badge brand-bg-${b.brand}">${brands[b.brand].name} ${b.brandName}</span></div>
-        </div>
-      </div>
-      <div class="specs-table">
-        <table>${specRows}</table>
-      </div>
-      <div class="compat-section">
-        <h3>推荐搭配镜头</h3>
-        <div class="device-grid">${compatCards || '<p style="color:#999">暂无兼容镜头</p>'}</div>
-      </div>
-    `;
+    const ibs = b.ibis ? `${b.ibisLevel} 防抖` : "无机身防抖";
+    const rows = [["品牌",brandTag(b.brand)],["型号",b.model],["卡口",b.mount],["传感器",b.sensor],
+      ["有效像素",`${b.megapixels} MP`],["视频规格",b.video],["RAW 视频",b.videoRaw||"不支持"],
+      ["处理器",b.processor],["防抖",ibs],["快门速度",b.shutter],["连拍",`${b.fps} 张/秒`],
+      ["ISO",b.iso],["重量",`${b.weight}g`],["发布价",priceText(b)],["二手价",priceText(b,true)],
+      ["上市",b.releaseYear],["描述",b.description]];
+    return `<div class="back-link" onclick="page.go('bodyList',{brand:'${b.brand}'})">← 返回列表</div>
+      <div class="detail-header"><div class="tr"><div><h2>${esc(b.model)}</h2>
+        <div class="desc">${b.description}</div>${tagChips(b.featureTags,"feature")}${tagChips(b.sceneTags,"scene")}
+      </div>${brandBadge(b.brand)}</div></div>
+      <div class="specs-table"><table>${specRows(rows)}</table></div>
+      <div class="compat-section"><h3>推荐搭配镜头</h3><div class="device-grid">${cc||'<p style="color:#999">暂无</p>'}</div></div>`;
   },
 
-  // ----- 镜头列表 -----
   lensList() {
-    const brand = page.params.brand || "";
-    let list = lenses;
-    if (brand) list = list.filter(l => l.brand === brand);
+    const brand = page.params.brand||"";
+    let list = brand ? lenses.filter(l=>l.brand===brand) : [...lenses];
+    const type = page.params.type||"";
+    if (type) list = list.filter(l=>l.type===type);
+    const sort = page.params.sort||"";
+    if (sort==="price-asc") list.sort((a,b)=>(a.launchPrice?.low||0)-(b.launchPrice?.low||0));
+    else if (sort==="price-desc") list.sort((a,b)=>(b.launchPrice?.low||0)-(a.launchPrice?.low||0));
+    else if (sort==="weight-asc") list.sort((a,b)=>a.weight-b.weight);
+    else list.sort((a,b)=>parseFloat((a.maxAperture||"2.8").replace("F",""))-parseFloat((b.maxAperture||"2.8").replace("F","")));
 
-    const typeFilter = page.params.type || "";
-    if (typeFilter) list = list.filter(l => l.type === typeFilter);
+    const fb = (l,act,oc) => `<span class="filter-btn ${act?'active':''}" onclick="${esc(oc)}">${l}</span>`;
+    let fhtml = `<div class="filter-bar">${fb("全部",!brand,"page.go('lensList',{})")}`;
+    for (const [k,v] of Object.entries(brands)) fhtml += fb(v.name,brand===k,`page.go('lensList',{brand:'${k}'})`);
+    fhtml += `</div>`;
 
-    const sort = page.params.sort || "";
-    if (sort === "price-asc") list.sort((a,b) => a.priceRange.localeCompare(b.priceRange));
-    else if (sort === "price-desc") list.sort((a,b) => b.priceRange.localeCompare(a.priceRange));
-    else if (sort === "weight-asc") list.sort((a,b) => a.weight - b.weight);
-
-    let filterHTML = `<div class="filter-bar">`;
-    filterHTML += `<span class="filter-btn ${!brand?'active':''}" onclick="page.go('lensList',{})">全部品牌</span>`;
-    for (const [k, v] of Object.entries(brands)) {
-      filterHTML += `<span class="filter-btn ${brand===k?'active':''}" onclick="page.go('lensList',{brand:'${k}'})">${v.name}</span>`;
-    }
-    filterHTML += `</div>`;
-
-    let typeHTML = "";
+    let th = "";
     if (brand) {
-      typeHTML = `<div class="filter-bar">`;
-      typeHTML += `<span class="filter-btn ${!typeFilter?'active':''}" onclick="page.go('lensList',{brand:'${brand}'})">全部类型</span>`;
       const types = [...new Set(lenses.filter(l=>l.brand===brand).map(l=>l.type))];
-      for (const t of types) {
-        typeHTML += `<span class="filter-btn ${typeFilter===t?'active':''}" onclick="page.go('lensList',{brand:'${brand}',type:'${t}'})">${t}</span>`;
-      }
-      typeHTML += `</div>`;
+      th = `<div class="filter-bar">${fb("全部类型",!type,`page.go('lensList',{brand:'${brand}'})`)}`;
+      for (const t of types) th += fb(t,type===t,`page.go('lensList',{brand:'${brand}',type:'${t}'})`);
+      th += `</div>`;
     }
 
-    const sortHTML = `
-      <div class="filter-bar">
-        <span class="filter-btn ${sort===''?'active':''}" onclick="page.go('lensList',{brand:'${brand}',type:'${typeFilter}'})">默认</span>
-        <span class="filter-btn ${sort==='price-asc'?'active':''}" onclick="page.go('lensList',{brand:'${brand}',type:'${typeFilter}',sort:'price-asc'})">价格↑</span>
-        <span class="filter-btn ${sort==='price-desc'?'active':''}" onclick="page.go('lensList',{brand:'${brand}',type:'${typeFilter}',sort:'price-desc'})">价格↓</span>
-        <span class="filter-btn ${sort==='weight-asc'?'active':''}" onclick="page.go('lensList',{brand:'${brand}',type:'${typeFilter}',sort:'weight-asc'})">重量↑</span>
+    const sh = `<div class="filter-bar">
+      ${fb("默认",!sort,`page.go('lensList',{brand:'${brand}',type:'${type}'})`)}
+      ${fb("价格↑",sort==="price-asc",`page.go('lensList',{brand:'${brand}',type:'${type}',sort:'price-asc'})`)}
+      ${fb("价格↓",sort==="price-desc",`page.go('lensList',{brand:'${brand}',type:'${type}',sort:'price-desc'})`)}
+      ${fb("光圈",sort==="aperture",`page.go('lensList',{brand:'${brand}',type:'${type}',sort:'aperture'})`)}
+      ${fb("重量↑",sort==="weight-asc",`page.go('lensList',{brand:'${brand}',type:'${type}',sort:'weight-asc'})`)}
+    </div>`;
+
+    const cards = list.map(l => `
+      <div class="device-card" onclick="page.go('lensDetail',{id:'${l.id}'})">
+        <div class="top">${brandTag(l.brand)}<span class="tt">${l.type}</span></div>
+        <h3>${esc(l.model)}</h3><div class="sub">${l.focalRange} · ${l.aperture}</div>
+        <div class="sp"><span>⚖️ ${l.weight}g</span><span>🔘 ${l.filterSize}mm</span><span>📅 ${l.releaseYear}</span></div>
+        <div class="pr">${priceText(l)}</div>
+        ${tagChips(l.featureTags?.slice(0,4),"feature")}
       </div>
-    `;
-
-    const cards = list.map(l => {
-      const compatBodies = bodies.filter(b => b.brand === l.brand && b.mount === l.mount);
-      return `
-        <div class="device-card" onclick="page.go('lensDetail',{id:'${l.id}'})">
-          <div class="card-top">
-            ${brandTag(l.brand)}
-            <span class="type-tag">${l.type}</span>
-          </div>
-          <h3>${esc(l.model)}</h3>
-          <div class="sub">${l.focalRange} · ${l.aperture}</div>
-          <div class="specs">
-            <span>⚖️ ${l.weight}g</span>
-            <span>🔘 ${l.filterSize}mm</span>
-            <span>📅 ${l.releaseYear}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-            <span class="price">${priceText(l.priceRange)}</span>
-            <span style="font-size:12px;color:#999">${compatBodies.length} 款兼容机身</span>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    return `
-      <div class="back-link" onclick="page.go('home')">← 返回首页</div>
-      ${filterHTML}
-      ${typeHTML}
-      ${sortHTML}
-      <div class="device-grid">${cards || '<p style="color:#999;padding:40px;text-align:center">没有找到匹配的镜头</p>'}</div>
-    `;
+    `).join("");
+    return `<div class="back-link" onclick="page.go('home')">← 返回首页</div>${fhtml}${th}${sh}<div class="device-grid">${cards||'<p style="padding:40px;text-align:center;color:#999">暂无</p>'}</div>`;
   },
 
-  // ----- 镜头详情 -----
   lensDetail() {
-    const id = page.params.id;
-    const l = lenses.find(x => x.id === id);
-    if (!l) return '<div class="error-box">未找到该镜头</div>';
-
-    const compatBodies = bodies.filter(b => b.brand === l.brand && b.mount === l.mount);
-    const compatCards = compatBodies.map(b => {
-      const score = getComboScore(b.id, l.id);
-      const sc = score && !score.error ? score.overall : 0;
-      return `
-        <div class="device-card" onclick="page.go('combo',{body:'${b.id}',lens:'${l.id}'})">
-          <div class="card-top">
-            ${brandTag(b.brand)}
-            <span class="type-tag">${b.sensor}</span>
-          </div>
-          <h3>${esc(b.model)}</h3>
-          <div class="sub">${b.megapixels}MP · ${b.video}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-            <span class="price">${priceText(b.priceRange)}</span>
-            <span style="font-weight:700;font-size:18px;color:${scoreColor(sc)}">${sc}</span>
-          </div>
-        </div>
-      `;
+    const l = lenses.find(x=>x.id===page.params.id);
+    if (!l) return `<div class="back-link" onclick="page.go('home')">← 返回</div><div class="error-box">未找到该镜头</div>`;
+    const cb = bodies.filter(b=>b.brand===l.brand&&b.mount===l.mount);
+    const cc = cb.map(b=>{
+      const sc = getComboScore(b.id, l.id);
+      const sv = sc&&!sc.error?sc.overall:0;
+      return `<div class="device-card" onclick="page.go('combo',{body:'${b.id}',lens:'${l.id}'})">
+        <div class="top">${brandTag(b.brand)}<span class="tt">${b.sensor}</span></div>
+        <h3>${esc(b.model)}</h3><div class="sub">${b.megapixels}MP · ${(b.video||"").split("/")[0]?.trim()||""}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span style="font-size:14px;font-weight:600">${priceText(b)}</span>
+          <span style="font-weight:700;font-size:18px;color:${scoreColor(sv)}">${sv}</span>
+        </div></div>`;
     }).join("");
-
-    const rows = [
-      ["品牌", brandTag(l.brand)],
-      ["型号", l.model],
-      ["卡口", l.mount],
-      ["类型", l.type],
-      ["焦距/焦段", l.focalRange],
-      ["最大光圈", l.aperture],
-      ["最小光圈", l.minAperture],
-      ["镜头结构", `${l.elements}`],
-      ["滤镜口径", `${l.filterSize}mm`],
-      ["重量", `${l.weight}g`],
-      ["防抖", l.isIS ? "支持" : "不支持"],
-      ["上市年份", l.releaseYear],
-      ["参考价格", priceText(l.priceRange)],
-      ["描述", l.description]
-    ];
-
-    const specRows = rows.map(([label, val]) =>
-      `<tr><td>${label}</td><td>${val}</td></tr>`
-    ).join("");
-
-    return `
-      <div class="back-link" onclick="page.go('lensList',{brand:'${l.brand}'})">← 返回列表</div>
-      <div class="detail-header">
-        <div class="title-row">
-          <div>
-            <h2>${esc(l.model)}</h2>
-            <div class="desc">${l.focalRange} · ${l.aperture} · ${l.description}</div>
-          </div>
-          <div><span class="brand-badge brand-bg-${l.brand}">${brands[l.brand].name}</span></div>
-        </div>
-      </div>
-      <div class="specs-table">
-        <table>${specRows}</table>
-      </div>
-      <div class="compat-section">
-        <h3>推荐搭配机身</h3>
-        <div class="device-grid">${compatCards || '<p style="color:#999">暂无兼容机身</p>'}</div>
-      </div>
-    `;
+    const rows = [["品牌",brandTag(l.brand)],["型号",l.model],["卡口",l.mount],["类型",l.type],
+      ["焦距",l.focalRange],["最大光圈",l.aperture],["最小光圈",l.minAperture],
+      ["结构",l.elements],["滤镜口径",`${l.filterSize}mm`],["重量",`${l.weight}g`],
+      ["防抖",l.isIS?"支持":"不支持"],["发布价",priceText(l)],["二手价",priceText(l,true)],
+      ["上市",l.releaseYear],["描述",l.description]];
+    return `<div class="back-link" onclick="page.go('lensList',{brand:'${l.brand}'})">← 返回列表</div>
+      <div class="detail-header"><div class="tr"><div><h2>${esc(l.model)}</h2>
+        <div class="desc">${l.focalRange} · ${l.aperture} · ${l.description}</div>
+        ${tagChips(l.featureTags,"feature")}${tagChips(l.sceneTags,"scene")}
+      </div>${brandBadge(l.brand)}</div></div>
+      <div class="specs-table"><table>${specRows(rows)}</table></div>
+      <div class="compat-section"><h3>推荐搭配机身</h3><div class="device-grid">${cc||'<p style="color:#999">暂无</p>'}</div></div>`;
   },
-
-  // ----- 组合评分 -----
   combo() {
-    const bodyId = page.params.body || "";
-    const lensId = page.params.lens || "";
+    const bodyId = page.params.body||"";
+    const lensId = page.params.lens||"";
+    const selBody = bodies.find(b=>b.id===bodyId);
+    const selLens = lenses.find(l=>l.id===lensId);
+    const defBrand = selBody?.brand||selLens?.brand||"canon";
 
-    // 选择器
-    const allBrands = Object.entries(brands);
-    const brandOptions = allBrands.map(([k, v]) => `<option value="${k}">${v.name}</option>`).join("");
+    const bo = bodies.filter(b=>b.brand===defBrand).map(b=>`<option value="${b.id}" ${b.id===bodyId?"selected":""}>${b.model}</option>`).join("");
+    const lo = lenses.filter(l=>l.brand===defBrand).map(l=>`<option value="${l.id}" ${l.id===lensId?"selected":""}>${l.model}</option>`).join("");
+    const brandOps = Object.entries(brands).map(([k,v])=>`<option value="${k}" ${k===defBrand?"selected":""}>${v.name}</option>`).join("");
 
-    const selBody = bodies.find(b => b.id === bodyId);
-    const selLens = lenses.find(l => l.id === lensId);
-
-    // 品牌预选
-    const defaultBrand = selBody ? selBody.brand : (selLens ? selLens.brand : "canon");
-    const bodiesForBrand = bodies.filter(b => b.brand === defaultBrand);
-    const lensesForBrand = lenses.filter(l => l.brand === defaultBrand);
-
-    const bodyOpts = bodiesForBrand.map(b =>
-      `<option value="${b.id}" ${b.id===bodyId?'selected':''}>${b.model}</option>`
-    ).join("");
-    const lensOpts = lensesForBrand.map(l =>
-      `<option value="${l.id}" ${l.id===lensId?'selected':''}>${l.model}</option>`
-    ).join("");
-
-    let resultHTML = "";
+    let result = "";
     if (selBody && selLens) {
-      const score = getComboScore(bodyId, lensId);
-      if (score && !score.error) {
-        const breakdown = [
-          ["画质匹配度", score.resolutionMatch],
-          ["视频性能匹配", score.videoMatch],
-          ["便携性", score.portability],
-          ["性价比", score.value],
-          ["专业匹配度", score.professional]
-        ];
-        const barRows = breakdown.map(([label, val]) => `
-          <div class="score-row">
-            <span class="label">${label}</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${val}%;background:${scoreColor(val)}"></div></div>
-            <span class="value">${val}</span>
-          </div>
-        `).join("");
-        resultHTML = `
-          <div class="score-card">
-            <div class="score-big">
-              <div class="number" style="color:${scoreColor(score.overall)}">${score.overall}</div>
-              <div class="label">系统综合评分 · ${scoreText(score.overall)}</div>
-            </div>
-          </div>
-          <div class="score-card">
-            <h3 style="margin-bottom:16px;font-size:16px;font-weight:600">评分详情</h3>
-            <div class="score-breakdown">${barRows}</div>
-          </div>
+      const sc = getComboScore(bodyId, lensId);
+      if (sc && !sc.error) {
+        const dims = [["画质匹配度",sc.resolutionMatch],["视频性能匹配",sc.videoMatch],
+          ["便携性",sc.portability],["性价比",sc.value],["专业匹配度",sc.professional]];
+        const bars = dims.map(([lb,val])=>`<div class="score-row"><span class="label">${lb}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${val}%;background:${scoreColor(val)}"></div></div>
+          <span class="value">${val}</span></div>`).join("");
+        const p = {low:(selBody.launchPrice?.low||0)+(selLens.launchPrice?.low||0)};
+        const up = {low:(selBody.usedPrice?.low||0)+(selLens.usedPrice?.low||0)};
+        result = `
+          <div class="score-card"><div class="score-big">
+            <div class="num" style="color:${scoreColor(sc.overall)}">${sc.overall}</div>
+            <div class="lb">系统综合评分 · ${scoreText(sc.overall)}</div></div></div>
+          <div class="score-card"><h3 style="margin-bottom:16px;font-size:16px;font-weight:600">评分详情</h3>
+            <div class="score-breakdown">${bars}</div></div>
           <div class="score-card">
             <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">组合信息</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-              <div>
-                <div style="font-size:12px;color:#999;margin-bottom:4px">机身</div>
+              <div><div style="font-size:12px;color:#999;margin-bottom:4px">机身 ${brands[selBody.brand]?.name||""}</div>
                 <div style="font-weight:600">${esc(selBody.model)}</div>
-                <div style="font-size:13px;color:#666">${brands[selBody.brand].name} · ${selBody.sensor} · ${selBody.megapixels}MP</div>
-                <div style="font-size:13px;color:#666">${priceText(selBody.priceRange)} · ${selBody.weight}g</div>
-              </div>
-              <div>
-                <div style="font-size:12px;color:#999;margin-bottom:4px">镜头</div>
+                <div style="font-size:13px;color:#666">${selBody.sensor} · ${selBody.megapixels}MP · ${selBody.weight}g</div></div>
+              <div><div style="font-size:12px;color:#999;margin-bottom:4px">镜头</div>
                 <div style="font-weight:600">${esc(selLens.model)}</div>
-                <div style="font-size:13px;color:#666">${brands[selLens.brand].name} · ${selLens.focalRange} · ${selLens.aperture}</div>
-                <div style="font-size:13px;color:#666">${priceText(selLens.priceRange)} · ${selLens.weight}g</div>
-              </div>
+                <div style="font-size:13px;color:#666">${selLens.mount} · ${selLens.focalRange} · ${selLens.weight}g</div></div>
             </div>
             <div style="margin-top:12px;font-size:13px;color:#999;border-top:1px solid var(--border);padding-top:12px">
-              总重: ${selBody.weight + selLens.weight}g · 总价: ${priceText(String(parseInt(selBody.priceRange.split("-")[0]) + parseInt(selLens.priceRange.split("-")[0])))} 起
+              总重: ${selBody.weight+selLens.weight}g ·
+              全新 ¥${formatNum(p.low)} 起 / 二手 ¥${formatNum(up.low)} 起
             </div>
-          </div>
-        `;
+            ${tagChips([...new Set([...(selBody.featureTags||[]),...(selLens.featureTags||[])])],"feature")}
+          </div>`;
       } else {
-        resultHTML = `<div class="error-box">${score?.error || "无法计算评分"}</div>`;
+        result = `<div class="error-box">${sc?.error||"无法计算评分"}</div>`;
       }
     }
 
-    return `
-      <div class="back-link" onclick="page.go('home')">← 返回首页</div>
+    return `<div class="back-link" onclick="page.go('home')">← 返回首页</div>
       <div class="score-card">
         <h3 style="margin-bottom:16px;font-size:16px;font-weight:600">选择组合评分</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <label style="font-size:13px;color:#999;display:block;margin-bottom:4px">选择品牌</label>
-            <select id="combo-brand" onchange="render.changeComboBrand()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px">
-              ${brandOptions}
-            </select>
-          </div>
-        </div>
+        <div style="margin-bottom:12px"><label style="font-size:13px;color:#999;display:block;margin-bottom:4px">品牌</label>
+          <select id="cb-brand" onchange="cbChange()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px">${brandOps}</select></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="font-size:13px;color:#999;display:block;margin-bottom:4px">机身</label>
-            <select id="combo-body" onchange="render.changeComboBody()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px">
-              <option value="">请选择机身</option>
-              ${bodyOpts}
-            </select>
-          </div>
-          <div>
-            <label style="font-size:13px;color:#999;display:block;margin-bottom:4px">镜头</label>
-            <select id="combo-lens" onchange="render.changeComboLens()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px">
-              <option value="">请选择镜头</option>
-              ${lensOpts}
-            </select>
-          </div>
+          <div><label style="font-size:13px;color:#999;display:block;margin-bottom:4px">机身</label>
+            <select id="cb-body" onchange="cbSel()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px"><option value="">请选择</option>${bo}</select></div>
+          <div><label style="font-size:13px;color:#999;display:block;margin-bottom:4px">镜头</label>
+            <select id="cb-lens" onchange="cbSel()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px"><option value="">请选择</option>${lo}</select></div>
         </div>
       </div>
-      ${resultHTML}
-    `;
+      ${result}`;
   },
 
-  // ----- 搜索页 -----
   search() {
-    const q = (page.params.q || "").toLowerCase().trim();
+    const q = (page.params.q||"").toLowerCase().trim();
+    const si = `<div class="search-box"><span class="sicon">🔍</span>
+      <input type="text" id="s-inp" placeholder="搜索机身或镜头型号..." value="${esc(q)}"
+        onkeydown="if(event.key==='Enter'){const v=this.value.trim();if(v)page.go('search',{q:v})}"></div>`;
+    if (!q) return `${si}<div style="text-align:center;padding:60px 0;color:#999"><div style="font-size:48px;margin-bottom:12px">🔍</div><div>输入机身型号或镜头名称搜索</div></div>`;
 
-    const searchInput = `
-      <div class="search-box">
-        <span class="icon">🔍</span>
-        <input type="text" id="search-input" placeholder="搜索机身或镜头型号、品牌..." value="${esc(q)}"
-          onkeydown="if(event.key==='Enter'){const v=this.value.trim();if(v)page.go('search',{q:v})}">
-      </div>
-      <div style="margin-bottom:16px">
-        <span class="filter-btn" onclick="page.go('search',{q})">开始搜索</span>
-      </div>
-    `;
-
-    if (!q) {
-      return `
-        ${searchInput}
-        <div style="text-align:center;padding:60px 0;color:#999">
-          <div style="font-size:48px;margin-bottom:12px">🔍</div>
-          <div>输入机身型号或镜头名称搜索</div>
-        </div>
-      `;
+    const mb = bodies.filter(b=>b.model.toLowerCase().includes(q)||b.brandName.includes(q)||brands[b.brand]?.name.includes(q)||b.description?.includes(q));
+    const ml = lenses.filter(l=>l.model.toLowerCase().includes(q)||l.brandName.includes(q)||brands[l.brand]?.name.includes(q)||l.focalRange?.includes(q));
+    let rh = "";
+    if (mb.length) {
+      rh += `<div class="srch-group"><h3>机身 (${mb.length})</h3><div class="device-grid">`;
+      rh += mb.map(b=>`<div class="device-card" onclick="page.go('bodyDetail',{id:'${b.id}'})">
+        <div class="top">${brandTag(b.brand)}<span class="tt">${b.sensor}</span></div>
+        <h3>${esc(b.model)}</h3><div class="pr">${priceText(b)}</div></div>`).join("");
+      rh += `</div></div>`;
     }
-
-    const matchedBodies = bodies.filter(b =>
-      b.model.toLowerCase().includes(q) ||
-      b.brandName.includes(q) ||
-      brands[b.brand]?.name.includes(q) ||
-      b.description.includes(q)
-    );
-    const matchedLenses = lenses.filter(l =>
-      l.model.toLowerCase().includes(q) ||
-      l.brandName.includes(q) ||
-      brands[l.brand]?.name.includes(q) ||
-      l.focalRange.includes(q)
-    );
-
-    let resultsHTML = "";
-    if (matchedBodies.length) {
-      resultsHTML += `<div class="search-result-group"><h3>机身 (${matchedBodies.length})</h3><div class="device-grid">`;
-      resultsHTML += matchedBodies.map(b => `
-        <div class="device-card" onclick="page.go('bodyDetail',{id:'${b.id}'})">
-          <div class="card-top">${brandTag(b.brand)}<span class="type-tag">${b.sensor}</span></div>
-          <h3>${esc(b.model)}</h3>
-          <div class="sub">${b.megapixels}MP · ${b.video}</div>
-          <div class="price">${priceText(b.priceRange)}</div>
-        </div>
-      `).join("");
-      resultsHTML += `</div></div>`;
+    if (ml.length) {
+      rh += `<div class="srch-group"><h3>镜头 (${ml.length})</h3><div class="device-grid">`;
+      rh += ml.map(l=>`<div class="device-card" onclick="page.go('lensDetail',{id:'${l.id}'})">
+        <div class="top">${brandTag(l.brand)}<span class="tt">${l.type}</span></div>
+        <h3>${esc(l.model)}</h3><div class="pr">${priceText(l)}</div></div>`).join("");
+      rh += `</div></div>`;
     }
-    if (matchedLenses.length) {
-      resultsHTML += `<div class="search-result-group"><h3>镜头 (${matchedLenses.length})</h3><div class="device-grid">`;
-      resultsHTML += matchedLenses.map(l => `
-        <div class="device-card" onclick="page.go('lensDetail',{id:'${l.id}'})">
-          <div class="card-top">${brandTag(l.brand)}<span class="type-tag">${l.type}</span></div>
-          <h3>${esc(l.model)}</h3>
-          <div class="sub">${l.focalRange} · ${l.aperture}</div>
-          <div class="price">${priceText(l.priceRange)}</div>
-        </div>
-      `).join("");
-      resultsHTML += `</div></div>`;
-    }
-
-    if (!resultsHTML) {
-      resultsHTML = `<div style="text-align:center;padding:40px;color:#999">没有找到匹配结果 " ${esc(q)} "</div>`;
-    }
-
-    return `${searchInput}${resultsHTML}`;
+    if (!rh) rh = `<div style="text-align:center;padding:40px;color:#999">没有找到"${esc(q)}"的结果</div>`;
+    return `${si}${rh}`;
   }
 };
-
-// 组合选择器变更处理
-render.changeComboBrand = function() {
-  const brand = document.getElementById("combo-brand").value;
-  const bodySel = document.getElementById("combo-body");
-  const lensSel = document.getElementById("combo-lens");
-  const bodiesForBrand = bodies.filter(b => b.brand === brand);
-  const lensesForBrand = lenses.filter(l => l.brand === brand);
-  bodySel.innerHTML = `<option value="">请选择机身</option>` + bodiesForBrand.map(b => `<option value="${b.id}">${b.model}</option>`).join("");
-  lensSel.innerHTML = `<option value="">请选择镜头</option>` + lensesForBrand.map(l => `<option value="${l.id}">${l.model}</option>`).join("");
+// ---- 推荐向导 ----
+render.recommend = function() {
+  recState = { step:1, budgetLow:5000, budgetHigh:30000, photoPct:50,
+    sceneTypes:[], sensorPrefer:"", brandPrefer:[], useUsed:false,
+    existingBodyId:"", existingLensId:"", results:[] };
+  return render._recWizard();
 };
 
-render.changeComboBody = function() {
-  const bodyId = document.getElementById("combo-body").value;
-  const lensId = document.getElementById("combo-lens").value;
-  if (bodyId && lensId) {
-    page.go("combo", { body: bodyId, lens: lensId });
+render._recWizard = function() {
+  const s = recState;
+  const steps = [1,2,3,4,5].map(i => `<span class="step-dot ${i<s.step?"done":i===s.step?"active":""}">${i}</span>`).join("");
+
+  const step1 = `<div class="step-panel ${s.step===1?"active":""}">
+    <div class="step-label">步骤 1/5</div><div class="step-title">设定预算范围</div>
+    <div class="budget-display"><div class="label">预算范围</div>
+      <div class="num">¥${formatNum(s.budgetLow)} — ¥${formatNum(s.budgetHigh)}</div></div>
+    <div class="range-row">
+      <div class="vals"><span>¥1,000</span><span>¥100,000</span></div>
+      <label style="font-size:13px;color:var(--text-secondary)">最低预算</label>
+      <input type="range" min="1000" max="100000" step="500" value="${s.budgetLow}" oninput="recUIUpdate('budgetLow',this.value)">
+      <label style="font-size:13px;color:var(--text-secondary);margin-top:8px">最高预算</label>
+      <input type="range" min="1000" max="100000" step="500" value="${s.budgetHigh}" oninput="recUIUpdate('budgetHigh',this.value)"></div>
+    <div class="toggle-row">
+      <label class="toggle"><input type="checkbox" ${s.useUsed?"checked":""} onchange="recUIUpdate('useUsed',this.checked?1:0)">
+      <span class="sl"></span></label>
+      <span class="toggle-label">${s.useUsed?"查看二手价格":"查看全新价格"}</span></div>
+    <div class="wizard-btns"><span></span><button class="btn btn-primary" onclick="recUI('next')">下一步 →</button></div></div>`;
+
+  const step2 = `<div class="step-panel ${s.step===2?"active":""}">
+    <div class="step-label">步骤 2/5</div><div class="step-title">照片 / 视频 比例</div>
+    <div class="pct-grid">
+      <div class="pct-box"><div class="lb">📷 拍照</div><div class="val" style="color:#3B82F6">${s.photoPct}%</div></div>
+      <div class="pct-box"><div class="lb">🎬 视频</div><div class="val" style="color:#EF4444">${100-s.photoPct}%</div></div></div>
+    <div class="pct-bar"><div class="photo" style="width:${s.photoPct}%"></div><div class="video" style="width:${100-s.photoPct}%"></div></div>
+    <input type="range" min="0" max="100" step="5" value="${s.photoPct}" style="width:100%;accent-color:var(--text)"
+      oninput="recUIUpdate('photoPct',this.value)">
+    <div style="margin-top:8px;font-size:13px;color:var(--text-secondary);text-align:center">
+      ${s.photoPct>=70?"📷 偏重照片":100-s.photoPct>=70?"🎬 偏重视频":"⚖️ 均衡使用"}</div>
+    <div class="wizard-btns"><button class="btn btn-secondary" onclick="recUI('prev')">← 上一步</button>
+      <button class="btn btn-primary" onclick="recUI('next')">下一步 →</button></div></div>`;
+
+  const scenes = Object.entries(sceneLabels).map(([k,v]) =>
+    `<span class="scene-tag ${s.sceneTypes.includes(k)?"selected":""}" onclick="recUI('scene','${k}')">${sceneIcons[k]||""} ${v}</span>`
+  ).join("");
+  const step3 = `<div class="step-panel ${s.step===3?"active":""}">
+    <div class="step-label">步骤 3/5 · 可多选（1-3 项）</div><div class="step-title">主要拍摄类型</div>
+    <div class="scene-grid">${scenes}</div>
+    <div class="wizard-btns"><button class="btn btn-secondary" onclick="recUI('prev')">← 上一步</button>
+      <button class="btn btn-primary" onclick="recUI('next')">下一步 →</button></div></div>`;
+
+  const sensors = ["","全画幅","APS-C","MFT","中画幅"];
+  const sBtns = sensors.map(s => `<span class="pref-chip ${recState.sensorPrefer===s?"selected":""}" onclick="recUI('sensor','${s}')">${s||"不限"}</span>`).join("");
+  const brandBtns = `<span class="pref-chip ${!s.brandPrefer.length?"selected":""}" onclick="recUI('brand','')">不限</span>` +
+    Object.entries(brands).map(([k,v]) => `<span class="pref-chip ${s.brandPrefer.includes(k)?"selected":""}" onclick="recUI('brand','${k}')">${v.name}</span>`).join("");
+  const ebOps = `<option value="">无</option>` + bodies.map(b=>`<option value="${b.id}">${brands[b.brand]?.name||""} ${b.model}</option>`).join("");
+  const elOps = `<option value="">无</option>` + lenses.map(l=>`<option value="${l.id}">${brands[l.brand]?.name||""} ${l.model}</option>`).join("");
+
+  const step4 = `<div class="step-panel ${s.step===4?"active":""}">
+    <div class="step-label">步骤 4/5 · 可跳过</div><div class="step-title">偏好设置</div>
+    <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">画幅偏好</label>
+    <div class="pref-row">${sBtns}</div>
+    <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">品牌偏好</label>
+    <div class="pref-row">${brandBtns}</div>
+    <label style="font-size:13px;color:var(--text-secondary);display:block;margin:16px 0 6px">已有设备（选填）</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <select onchange="recUI('ebody',this.value)" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px"><option value="">已有机身</option>${ebOps}</select>
+      <select onchange="recUI('elens',this.value)" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px"><option value="">已有镜头</option>${elOps}</select></div>
+    <div class="wizard-btns"><button class="btn btn-secondary" onclick="recUI('prev')">← 上一步</button>
+      <button class="btn btn-primary" onclick="recUI('run')">查看推荐 →</button></div></div>`;
+
+  let resultsHTML = "";
+  if (s.results.length) {
+    resultsHTML = s.results.map((r, i) => {
+      const rk = i<3?`rank-${i+1}`:"rank-other";
+      const badge = s.useUsed?"二手":"全新";
+      return `<div class="rec-card" onclick="page.go('combo',{body:'${r.body.id}',lens:'${r.lens.id}'})">
+        <div class="rec-hdr"><span class="rank ${rk}">${i+1}</span>
+          <span class="rec-sc" style="color:${scoreColor(r.finalScore)}">${r.finalScore}</span></div>
+        <div class="rec-reason">${getRecommendationReason(r)}</div>
+        <div class="combo-item"><span class="role">机身</span><span class="nm">${esc(r.body.model)}</span></div>
+        <div class="combo-item"><span class="role">镜头</span><span class="nm">${esc(r.lens.model)}</span></div>
+        <div style="font-size:14px;font-weight:600;color:#0369A1;margin-top:4px">${badge}总价 ¥${formatNum(r.price.low)} 起</div>
+        <div style="font-size:12px;color:var(--text-secondary)">${r.body.megapixels}MP · ${r.lens.focalRange} ${r.lens.aperture} · ${r.totalWeight}g</div>
+        ${tagChips([...new Set([...r.body.featureTags,...r.lens.featureTags])].slice(0,4),"feature")}
+      </div>`;
+    }).join("");
+  } else {
+    resultsHTML = `<div style="text-align:center;padding:40px;color:#999"><div style="font-size:40px;margin-bottom:12px">🔍</div><div>点击"查看推荐"获取结果</div></div>`;
   }
-};
 
-render.changeComboLens = function() {
-  const bodyId = document.getElementById("combo-body").value;
-  const lensId = document.getElementById("combo-lens").value;
-  if (bodyId && lensId) {
-    page.go("combo", { body: bodyId, lens: lensId });
+  const step5 = `<div class="step-panel ${s.step===5?"active":""}">
+    <div class="step-label">推荐结果</div><div class="step-title">为你推荐的组合</div>
+    <div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--text-secondary)">
+      预算 ¥${formatNum(s.budgetLow)}-${formatNum(s.budgetHigh)} · 照片 ${s.photoPct}% / 视频 ${100-s.photoPct}% · ${s.useUsed?"二手":"全新"}
+    </div>
+    ${s.results.length?`<div style="text-align:center;margin-bottom:16px;color:#0369A1;font-size:14px">共 ${s.results.length} 个推荐方案</div>`:""}
+    ${resultsHTML}
+    <div class="wizard-btns"><button class="btn btn-secondary" onclick="recUI('prev')">← 修改需求</button>
+      <button class="btn btn-primary" onclick="recUI('run')">🔄 重新推荐</button>
+      <a href="#combo" class="btn btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center">组合评分</a>
+    </div></div>`;
+
+  return `<div class="steps">${steps}</div>${step1}${step2}${step3}${step4}${step5}`;
+};
+// ---- 推荐 UI 控制 ----
+function recUI(action, val) {
+  const s = recState;
+  if (action === "prev") { if (s.step>1) { s.step--; page.render(); } return; }
+  if (action === "next") {
+    if (s.step===3 && !s.sceneTypes.length) { alert("请至少选择一个拍摄类型"); return; }
+    s.step++;
+    if (s.step===5) { recRun(); return; }
+    page.render(); return;
   }
-};
+  if (action === "scene") {
+    const idx = s.sceneTypes.indexOf(val);
+    if (idx>=0) s.sceneTypes.splice(idx,1);
+    else if (s.sceneTypes.length<3) s.sceneTypes.push(val);
+    s.results=[]; page.render(); return;
+  }
+  if (action === "sensor") { s.sensorPrefer=val; s.results=[]; page.render(); return; }
+  if (action === "brand") {
+    if (!val) { s.brandPrefer=[]; } else { const idx=s.brandPrefer.indexOf(val); idx>=0?s.brandPrefer.splice(idx,1):s.brandPrefer.push(val); }
+    s.results=[]; page.render(); return;
+  }
+  if (action === "ebody") { s.existingBodyId=val; s.results=[]; return; }
+  if (action === "elens") { s.existingLensId=val; s.results=[]; return; }
+  if (action === "run") { recRun(); return; }
+}
 
-// ---------- 页面渲染入口 ----------
+function recUIUpdate(key, val) {
+  const s = recState;
+  const num = parseInt(val);
+  if (key === "budgetLow") s.budgetLow = Math.min(num, s.budgetHigh-500);
+  else if (key === "budgetHigh") s.budgetHigh = Math.max(num, s.budgetLow+500);
+  else if (key === "photoPct") s.photoPct = num;
+  else if (key === "useUsed") s.useUsed = !!parseInt(val);
+  page.render();
+}
+
+function recRun() {
+  const s = recState;
+  s.results = recommend({
+    budgetLow: s.budgetLow, budgetHigh: s.budgetHigh,
+    photoPct: s.photoPct, sceneTypes: s.sceneTypes,
+    sensorPrefer: s.sensorPrefer, brandPrefer: s.brandPrefer,
+    useUsed: s.useUsed, existingBodyId: s.existingBodyId,
+    existingLensId: s.existingLensId, topN: 8
+  });
+  s.step = 5; page.render();
+}
+
+function cbChange() {
+  const brand = document.getElementById("cb-brand").value;
+  const bs = document.getElementById("cb-body");
+  const ls = document.getElementById("cb-lens");
+  bs.innerHTML = `<option value="">请选择</option>` + bodies.filter(b=>b.brand===brand).map(b=>`<option value="${b.id}">${b.model}</option>`).join("");
+  ls.innerHTML = `<option value="">请选择</option>` + lenses.filter(l=>l.brand===brand).map(l=>`<option value="${l.id}">${l.model}</option>`).join("");
+}
+function cbSel() {
+  const bodyId = document.getElementById("cb-body")?.value;
+  const lensId = document.getElementById("cb-lens")?.value;
+  if (bodyId && lensId) page.go("combo", {body: bodyId, lens: lensId});
+}
+
+// ---- 渲染入口 ----
 page.render = function() {
   const app = document.getElementById("app");
   const content = render[this.current] ? render[this.current]() : render.home();
   app.innerHTML = content;
-
-  // 更新导航高亮
-  $$(".nav a").forEach(a => {
-    a.classList.toggle("active", a.dataset.page === this.current);
-  });
-
-  // 搜索结果自动聚焦 + 自动触发
-  const searchInput = document.getElementById("search-input");
-  if (searchInput && !this.params.q) {
-    setTimeout(() => searchInput.focus(), 100);
-  }
+  $$(".nav a").forEach(a => a.classList.toggle("active", a.dataset.page === this.current));
+  const si = document.getElementById("s-inp");
+  if (si && !page.params.q) setTimeout(()=>si.focus(), 100);
 };
 
-// ---------- 启动 ----------
+// ---- 启动 ----
 document.addEventListener("DOMContentLoaded", () => page.init());
 
-// Expose to global scope for onclick handlers
+// 全局暴露
 window.page = page;
 window.render = render;
+window.recState = recState;
+window.recUI = recUI;
+window.recUIUpdate = recUIUpdate;
+window.recRun = recRun;
+window.cbChange = cbChange;
+window.cbSel = cbSel;
+window.recommend = recommend;
+window.getComboScore = getComboScore;

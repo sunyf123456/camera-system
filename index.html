@@ -7,22 +7,20 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
   <header class="app-header">
     <h1>🎬 影视设备打分</h1>
     <nav class="nav">
       <a data-page="home" onclick="page.go('home')">首页</a>
       <a data-page="bodyList" onclick="page.go('bodyList',{})">机身</a>
       <a data-page="lensList" onclick="page.go('lensList',{})">镜头</a>
-      <a data-page="combo" onclick="page.go('combo',{})">组合评分</a>
+      <a data-page="recommend" onclick="page.go('recommend',{})" style="color:#0369A1;font-weight:700">🎯 推荐</a>
+      <a data-page="combo" onclick="page.go('combo',{})">评分</a>
       <a data-page="search" onclick="page.go('search',{})">搜索</a>
     </nav>
   </header>
-
   <main class="app-main" id="app">
     <div style="text-align:center;padding:80px 0;color:#999">加载中...</div>
   </main>
-
   <script src="js/data/bodies.js"></script>
   <script src="js/data/lenses.js"></script>
   <script src="js/data/scoring.js"></script>
