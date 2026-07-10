@@ -780,8 +780,7 @@ function priceText(p, useUsed=false) {
 function formatNum(n) { return n>=10000 ? (n/10000).toFixed(n%10000?1:0)+"万" : (n|0).toString(); }
 function brandTag(b) { return `<span class="bt brand-bg-${b}">${brands[b]?.name||b}</span>`; }
 function brandBadge(b) { return `<span class="badge brand-bg-${b}">${brands[b]?.name||b}</span>`; }
-function brandIcon(b) { return brandLogoSvg(b); }">${info.cn[0]}</span>`;
-}
+function brandIcon(b) { return brandLogoSvg(b); }
 function scoreColor(s) { return s>=85?"#22C55E":s>=70?"#8BC34A":s>=55?"#FF9800":"#EF4444"; }
 function scoreText(s) { return s>=85?"优秀":s>=70?"良好":s>=55?"一般":"不推荐"; }
 
@@ -803,6 +802,7 @@ let recState = {
   existingBodyId: "", existingLensId: "", results: []
 };
 
+let recStateInit = false;
 // ---- 页面渲染 ----
 const render = {
   home() {
@@ -837,7 +837,7 @@ const render = {
     return `<div style="text-align:center;margin-bottom:28px">
       <div style="font-size:32px;font-weight:800;margin-bottom:8px">影视设备打分</div>
       <div style="color:var(--text-secondary);margin-bottom:16px">机身 · 镜头 · 组合评分 · 智能推荐</div>
-      <button class="btn btn-primary" onclick="recStateInit=false;page.go('recommend',{})" style="padding:14px 40px;font-size:16px">🎯 开始推荐</button>
+      <button class="btn btn-primary" onclick="page.go('recommend',{})" style="padding:14px 40px;font-size:16px">🎯 开始推荐</button>
     </div>
     <h2 class="section-title">选择品牌</h2><div class="brand-grid">${brandCards}</div>
     <h2 class="section-title">🔥 热门评分组合</h2><div class="combo-grid">${cc||'<p style="color:#999">暂无数据</p>'}</div>`;
@@ -1084,9 +1084,12 @@ const render = {
 };
 // ---- 推荐向导 ----
 render.recommend = function() {
-  recState = { step:1, budgetLow:5000, budgetHigh:30000, photoPct:50,
-    sceneTypes:[], sensorPrefer:"", brandPrefer:[], useUsed:false,
-    existingBodyId:"", existingLensId:"", results:[] };
+  if (!recStateInit) {
+    recState = { step:1, budgetLow:5000, budgetHigh:30000, photoPct:50,
+      sceneTypes:[], sensorPrefer:"", brandPrefer:[], useUsed:false,
+      existingBodyId:"", existingLensId:"", results:[] };
+    recStateInit = true;
+  }
   return render._recWizard();
 };
 
