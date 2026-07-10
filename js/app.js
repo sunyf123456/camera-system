@@ -37,25 +37,6 @@ const page = {
 function $(s) { return document.querySelector(s); }
 function $$(s) { return document.querySelectorAll(s); }
 
-const sceneLabels = {
-  portrait:"人像摄影", landscape:"风光/旅行", wedding:"婚礼/活动", documentary:"纪录片",
-  cinema:"电影/短片", vlog:"Vlog/自媒体", sports:"体育/运动", commercial:"商业产品",
-  wildlife:"野生动物", street:"街拍/人文"
-};
-const sceneIcons = {
-  portrait:"👤", landscape:"🏔️", wedding:"💒", documentary:"🎬",
-  cinema:"🎥", vlog:"🎙️", sports:"⚽", commercial:"📦", wildlife:"🦅", street:"🏙️"
-};
-const featureLabels = {
-  "high-mp":"高像素","mid-mp":"中像素","low-mp":"低像素","high-fps":"高速连拍","mid-fps":"中速连拍",
-  "8k-video":"8K视频","6k-video":"6K视频","4k120-video":"4K高帧率","raw-video":"RAW视频",
-  "lightweight":"轻便","heavy":"沉重","pro-body":"专业旗舰","pro-ibis":"防抖出色",
-  "stacked-sensor":"堆栈式传感器","high-iso":"高感光","retro":"复古外观",
-  "large-aperture":"大光圈","mid-aperture":"中光圈","constant-aperture":"恒定光圈","pro-lens":"专业镜头",
-  "wide-angle":"广角","telephoto":"长焦","standard":"标准焦段","macro":"微距",
-  "is-lens":"防抖镜头","portrait-focal":"人像焦段","travel-zoom":"旅行变焦","filter-82":"82mm口径"
-};
-
 function esc(s) { const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
 function priceText(p, useUsed=false) {
   if (!p) return "价格待询";
