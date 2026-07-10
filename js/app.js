@@ -47,9 +47,7 @@ function priceText(p, useUsed=false) {
 function formatNum(n) { return n>=10000 ? (n/10000).toFixed(n%10000?1:0)+"万" : (n|0).toString(); }
 function brandTag(b) { return `<span class="bt brand-bg-${b}">${brands[b]?.name||b}</span>`; }
 function brandBadge(b) { return `<span class="badge brand-bg-${b}">${brands[b]?.name||b}</span>`; }
-function brandIcon(b) {
-  const info=brands[b]; if(!info) return "";
-  return `<span class="brand-icon brand-bg-${b}">${info.cn[0]}</span>`;
+function brandIcon(b) { return brandLogoSvg(b); }">${info.cn[0]}</span>`;
 }
 function scoreColor(s) { return s>=85?"#22C55E":s>=70?"#8BC34A":s>=55?"#FF9800":"#EF4444"; }
 function scoreText(s) { return s>=85?"优秀":s>=70?"良好":s>=55?"一般":"不推荐"; }
@@ -78,7 +76,7 @@ const render = {
     const brandCards = Object.entries(brands).map(([k,v]) => {
       const bc = bodies.filter(b=>b.brand===k).length;
       const lc = lenses.filter(l=>l.brand===k).length;
-      return `<div class="brand-card" onclick="page.go('bodyList',{brand:'${k}'})" style="border-bottom-color:${v.color}">
+      return `<div class="brand-card" onclick="page.go('bodyList',{brand:'${k}'})" style="border-bottom-color:transparent">
         ${brandIcon(k)}<h3>${v.name}</h3><div class="count">${bc} 款机身 · ${lc} 款镜头</div></div>`;
     }).join("");
 
@@ -540,3 +538,19 @@ window.cbChange = cbChange;
 window.cbSel = cbSel;
 window.recommend = recommend;
 window.getComboScore = getComboScore;
+function brandLogoSvg(brandKey) {
+  const info = brands[brandKey];
+  if (!info) return "";
+  const b = info.color;
+  const f = "#FFFFFF";
+  // Define brand-specific logos
+  const logos = {
+    canon: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="700" font-size="15" letter-spacing="2">CANON</text></svg>`,
+    nikon: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="#1A1A1A" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="#FFCD00" font-family="Arial,sans-serif" font-weight="700" font-size="14" letter-spacing="3">NIKON</text></svg>`,
+    fujifilm: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="700" font-size="11" letter-spacing="2">FUJIFILM</text></svg>`,
+    panasonic: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="600" font-size="13" letter-spacing="2">Panasonic</text></svg>`,
+    sony: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="#1A1A1A" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="800" font-size="16" letter-spacing="3">SONY</text></svg>`,
+    olympus: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="700" font-size="12" letter-spacing="2">OLYMPUS</text></svg>`
+  };
+  return logos[brandKey] || `<span style="background:${b};color:white;padding:6px 16px;border-radius:6px;font-weight:700;font-size:14px">${info.name}</span>`;
+}
