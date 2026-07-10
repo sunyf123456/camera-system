@@ -1281,12 +1281,12 @@ function brandLogoSvg(brandKey) {
   const f = "#FFFFFF";
   // Define brand-specific logos
   const logos = {
-    canon: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="700" font-size="15" letter-spacing="2">CANON</text></svg>`,
-    nikon: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="#1A1A1A" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="#FFCD00" font-family="Arial,sans-serif" font-weight="700" font-size="14" letter-spacing="3">NIKON</text></svg>`,
-    fujifilm: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="700" font-size="11" letter-spacing="2">FUJIFILM</text></svg>`,
-    panasonic: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="600" font-size="13" letter-spacing="2">Panasonic</text></svg>`,
-    sony: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="#1A1A1A" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="800" font-size="16" letter-spacing="3">SONY</text></svg>`,
-    olympus: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Arial,sans-serif" font-weight="700" font-size="12" letter-spacing="2">OLYMPUS</text></svg>`
+    canon: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Outfit,Arial,sans-serif" font-weight="700" font-size="15" letter-spacing="2">CANON</text></svg>`,
+    nikon: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="#1A1A1A" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="#FFCD00" font-family="Outfit,Arial,sans-serif" font-weight="700" font-size="14" letter-spacing="3">NIKON</text></svg>`,
+    fujifilm: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Outfit,Arial,sans-serif" font-weight="700" font-size="11" letter-spacing="2">FUJIFILM</text></svg>`,
+    panasonic: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Outfit,Arial,sans-serif" font-weight="600" font-size="13" letter-spacing="2">Panasonic</text></svg>`,
+    sony: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="#1A1A1A" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Outfit,Arial,sans-serif" font-weight="800" font-size="16" letter-spacing="3">SONY</text></svg>`,
+    olympus: `<svg viewBox="0 0 120 36" width="120" height="36"><rect rx="6" fill="${b}" width="120" height="36"/><text x="60" y="23" text-anchor="middle" fill="${f}" font-family="Outfit,Arial,sans-serif" font-weight="700" font-size="12" letter-spacing="2">OLYMPUS</text></svg>`
   };
   return logos[brandKey] || `<span style="background:${b};color:white;padding:6px 16px;border-radius:6px;font-weight:700;font-size:14px">${info.name}</span>`;
 }
