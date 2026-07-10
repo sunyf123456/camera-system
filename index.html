@@ -7,6 +7,19 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <script>
+    // Catch ALL errors (syntax errors included)
+    window.onerror = function(msg, url, line, col, err) {
+      document.getElementById("app").innerHTML =
+        '<div class="error-box" style="margin:20px;padding:20px">' +
+        '<h3 style="color:#DC2626;margin-bottom:8px">JavaScript Error</h3>' +
+        '<div style="font-size:14px;margin-bottom:8px">' + msg + '</div>' +
+        '<pre style="font-size:12px;background:#FEF2F2;padding:12px;border-radius:4px;overflow:auto;max-height:300px;text-align:left">' +
+        'File: ' + url + '\nLine: ' + line + '\nCol: ' + col + '\nStack: ' + (err ? err.stack : 'N/A') +
+        '</pre></div>';
+      return true;
+    };
+  </script>
   <header class="app-header">
     <h1>🎬 影视设备打分</h1>
     <nav class="nav">

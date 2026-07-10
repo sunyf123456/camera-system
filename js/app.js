@@ -546,7 +546,7 @@ page.render = function() {
 };
 
 // ---- 启动 ----
-document.addEventListener("DOMContentLoaded", () => page.init());
+document.addEventListener("DOMContentLoaded", () => { try { page.init(); } catch(e) { document.getElementById("app").innerHTML = `<div class="error-box"><h3>JavaScript Error</h3><pre style="text-align:left;overflow:auto;max-height:400px">${e.stack||e.message||e}</pre></div>`; } });
 
 // 全局暴露
 window.page = page;
